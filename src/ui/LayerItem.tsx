@@ -1,3 +1,4 @@
+import { Copy, Eye, EyeOff, ImageIcon, Trash2 } from "lucide-react";
 import { useEditorStore } from "@/store/editorStore";
 import type { Layer } from "@/types";
 
@@ -37,21 +38,23 @@ export default function LayerItem({ layer, isActive, onDragStart, onDrop }: Prop
           title={layer.visible ? "Esconder" : "Mostrar"}
           onClick={(e) => { e.stopPropagation(); toggleVisible(layer.id); }}
         >
-          {layer.visible ? "👁" : "🚫"}
+          {layer.visible
+            ? <Eye size={14} />
+            : <EyeOff size={14} />}
         </button>
         <button
           className="btn btn-ghost btn-xs btn-square"
           title="Duplicar"
           onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }}
         >
-          ⧉
+          <Copy size={14} />
         </button>
         <button
           className="btn btn-ghost btn-xs btn-square text-error"
           title="Apagar"
           onClick={(e) => { e.stopPropagation(); deleteLayer(layer.id); }}
         >
-          ✕
+          <Trash2 size={14} />
         </button>
       </div>
     </div>
@@ -78,7 +81,9 @@ function LayerThumbnail({ layer }: { layer: Layer }) {
     }
   })();
 
-  if (canvas === null) return <span className="text-xs">🖼</span>;
+  if (canvas === null) {
+    return <ImageIcon size={16} className="text-base-content/30" />;
+  }
 
   return (
     <canvas

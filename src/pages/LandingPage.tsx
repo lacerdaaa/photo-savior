@@ -1,3 +1,5 @@
+import { Crop, Download, ImageIcon, Layers } from "lucide-react";
+import { type ComponentType } from "react";
 import { useNavigate } from "react-router";
 import { useProjectStore } from "@/store/projectStore";
 
@@ -40,7 +42,7 @@ export default function LandingPage() {
             {features.map((f) => (
               <div key={f.label} className="card bg-base-200 card-sm">
                 <div className="card-body items-center text-center gap-2">
-                  <span className="text-2xl">{f.icon}</span>
+                  <f.Icon size={24} className="text-primary" />
                   <p className="text-sm font-medium text-base-content">{f.label}</p>
                 </div>
               </div>
@@ -52,9 +54,9 @@ export default function LandingPage() {
   );
 }
 
-const features = [
-  { icon: "🗂️", label: "Camadas" },
-  { icon: "✂️", label: "Crop" },
-  { icon: "🎨", label: "Filtros" },
-  { icon: "💾", label: "Export PNG/JPEG" },
+const features: Array<{ Icon: ComponentType<{ size: number; className: string }>; label: string }> = [
+  { Icon: Layers, label: "Camadas" },
+  { Icon: Crop, label: "Crop" },
+  { Icon: ImageIcon, label: "Filtros" },
+  { Icon: Download, label: "Export PNG/JPEG" },
 ];

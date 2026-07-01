@@ -1,3 +1,10 @@
+import {
+  Crop,
+  Download,
+  ImagePlus,
+  Redo2,
+  Undo2,
+} from "lucide-react";
 import { useExport } from "@/hooks/useExport";
 import { useUpload } from "@/hooks/useUpload";
 import { useActiveLayer, useCanRedo, useCanUndo, useEditorStore } from "@/store/editorStore";
@@ -26,8 +33,9 @@ export default function Toolbar() {
           className="hidden"
           onChange={(e) => void handleChange(e)}
         />
-        <button className="btn btn-primary btn-sm" onClick={openFilePicker}>
-          + Imagem
+        <button className="btn btn-primary btn-sm gap-1.5" onClick={openFilePicker}>
+          <ImagePlus size={15} />
+          Imagem
         </button>
       </div>
 
@@ -39,7 +47,7 @@ export default function Toolbar() {
             onClick={undo}
             title="Desfazer (Ctrl+Z)"
           >
-            ↩
+            <Undo2 size={15} />
           </button>
           <button
             className="btn btn-ghost btn-sm join-item"
@@ -47,34 +55,37 @@ export default function Toolbar() {
             onClick={redo}
             title="Refazer (Ctrl+Shift+Z)"
           >
-            ↪
+            <Redo2 size={15} />
           </button>
         </div>
 
         <button
-          className="btn btn-ghost btn-sm"
+          className="btn btn-ghost btn-sm gap-1.5"
           disabled={activeLayer === null || selection === null}
           onClick={handleCrop}
           title="Crop seleção"
         >
-          ✂ Crop
+          <Crop size={15} />
+          Crop
         </button>
       </div>
 
       <div className="navbar-end gap-2">
         <button
-          className="btn btn-outline btn-sm"
+          className="btn btn-outline btn-sm gap-1.5"
           onClick={() => void exportAs("png")}
           title="Exportar PNG"
         >
-          ↓ PNG
+          <Download size={15} />
+          PNG
         </button>
         <button
-          className="btn btn-outline btn-sm"
+          className="btn btn-outline btn-sm gap-1.5"
           onClick={() => void exportAs("jpeg")}
           title="Exportar JPEG"
         >
-          ↓ JPEG
+          <Download size={15} />
+          JPEG
         </button>
       </div>
     </div>

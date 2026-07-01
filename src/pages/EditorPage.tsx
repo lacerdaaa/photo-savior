@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import EditorStage from "@/canvas/EditorStage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -15,10 +16,11 @@ export default function EditorPage() {
       <div className="navbar bg-base-200 border-b border-base-300 shrink-0 px-4">
         <div className="navbar-start">
           <button
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm gap-1.5"
             onClick={() => void navigate("/projects")}
           >
-            ← Projetos
+            <ArrowLeft size={15} />
+            Projetos
           </button>
         </div>
         <div className="navbar-center">

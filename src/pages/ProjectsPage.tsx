@@ -1,3 +1,4 @@
+import { ArrowLeft, FolderOpen, ImageIcon, Plus } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useProjectStore } from "@/store/projectStore";
 import type { Project } from "@/types";
@@ -19,16 +20,24 @@ export default function ProjectsPage() {
     <div className="min-h-screen bg-base-100">
       <div className="navbar bg-base-200 shadow-sm">
         <div className="navbar-start">
-          <button className="btn btn-ghost" onClick={() => void navigate("/")}>
-            ← Photo Saviour
+          <button
+            className="btn btn-ghost gap-1.5"
+            onClick={() => void navigate("/")}
+          >
+            <ArrowLeft size={16} />
+            Photo Saviour
           </button>
         </div>
         <div className="navbar-center">
           <span className="text-lg font-bold text-base-content">Meus Projetos</span>
         </div>
         <div className="navbar-end">
-          <button className="btn btn-primary btn-sm" onClick={handleNewProject}>
-            + Novo Projeto
+          <button
+            className="btn btn-primary btn-sm gap-1.5"
+            onClick={handleNewProject}
+          >
+            <Plus size={15} />
+            Novo Projeto
           </button>
         </div>
       </div>
@@ -37,11 +46,12 @@ export default function ProjectsPage() {
         {projects.length === 0 ? (
           <div className="hero min-h-[60vh]">
             <div className="hero-content text-center flex-col gap-6">
-              <p className="text-5xl">🖼️</p>
+              <FolderOpen size={64} className="text-base-content/20" />
               <p className="text-xl text-base-content/60">
                 Nenhum projeto ainda. Crie o primeiro!
               </p>
-              <button className="btn btn-primary" onClick={handleNewProject}>
+              <button className="btn btn-primary gap-1.5" onClick={handleNewProject}>
+                <Plus size={16} />
                 Criar Projeto
               </button>
             </div>
@@ -76,7 +86,7 @@ function ProjectCard({
     >
       <div className="card-body gap-3">
         <div className="aspect-video bg-base-300 rounded-lg flex items-center justify-center">
-          <span className="text-3xl opacity-30">🖼️</span>
+          <ImageIcon size={32} className="text-base-content/20" />
         </div>
         <div>
           <h2 className="card-title text-sm">{project.name}</h2>
