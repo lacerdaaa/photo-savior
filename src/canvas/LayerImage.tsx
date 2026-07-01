@@ -10,9 +10,10 @@ type Props = {
   layer: Layer;
   isActive: boolean;
   toolMode: ActiveTool;
+  isErasing: boolean;
 };
 
-export default function LayerImage({ layer, isActive, toolMode }: Props) {
+export default function LayerImage({ layer, isActive, toolMode, isErasing }: Props) {
   const imageRef = useRef<Konva.Image>(null);
   const { moveLayer, resizeLayer, _pushHistory } = useEditorStore();
   const setActiveLayer = useEditorStore((s) => s.setActiveLayer);
@@ -59,6 +60,7 @@ export default function LayerImage({ layer, isActive, toolMode }: Props) {
       rotation={layer.rotation}
       opacity={layer.opacity}
       draggable={isActive && toolMode === "select"}
+      visible={!isErasing}
       onClick={() => setActiveLayer(layer.id)}
       onTap={() => setActiveLayer(layer.id)}
       onDragEnd={handleDragEnd}

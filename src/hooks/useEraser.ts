@@ -1,36 +1,43 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type Konva from "konva";
+import { applyFilters } from "@/filters/filterPipeline";
 import { useEditorStore } from "@/store/editorStore";
 import type { Layer } from "@/types";
 
 type StrokeState = {
   layerId: string;
-  buffer: Uint8ClampedArray<ArrayBuffer>;
   imgW: number;
   imgH: number;
+  layerX: number;
+  layerY: number;
+  layerW: number;
+  layerH: number;
+  layerRotation: number;
+  layerOpacity: number;
+  rawBuffer: Uint8ClampedArray<ArrayBuffer>;
+  previewCanvas: OffscreenCanvas;
+  previewCtx: OffscreenCanvasRenderingContext2D;
 };
 
 function stageToImageCoords(
   stageX: number,
   stageY: number,
-  layer: Layer,
+  layer: Pick<Layer, "x" | "y" | "width" | "height" | "rotation" | "imageData">,
 ): { x: number; y: number } {
   const cx = layer.x + layer.width / 2;
   const cy = layer.y + layer.height / 2;
+  const rad = -(layer.rotation * Math.PI) / 180;
   const dx = stageX - cx;
   const dy = stageY - cy;
-  const rad = -(layer.rotation * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  const lx = dx * cos - dy * sin + layer.width / 2;
-  const ly = dx * sin + dy * cos + layer.height / 2;
+  const lx = dx * Math.cos(rad) - dy * Math.sin(rad) + layer.width / 2;
+  const ly = dx * Math.sin(rad) + dy * Math.cos(rad) + layer.height / 2;
   return {
     x: Math.round(lx * (layer.imageData.width / layer.width)),
     y: Math.round(ly * (layer.imageData.height / layer.height)),
   };
 }
 
-function eraseCircle(
+function eraseRawBuffer(
   buffer: Uint8ClampedArray<ArrayBuffer>,
   imgW: number,
   imgH: number,
@@ -50,9 +57,11 @@ function eraseCircle(
   }
 }
 
-export function useEraser() {
+export function useEraser(
+  previewRef: React.RefObject<Konva.Image | null>,
+) {
   const strokeRef = useRef<StrokeState | null>(null);
-  const { _pushHistory, updateLayerImageData, eraserSize } = useEditorStore();
+  const [erasingLayerId, setErasingLayerId] = useState<string | null>(null);
 
   function getActiveLayer(): Layer | null {
     const { layers, activeLayerId } = useEditorStore.getState();
@@ -63,19 +72,32 @@ export function useEraser() {
     return e.target.getStage()?.getPointerPosition() ?? null;
   }
 
-  function applyAt(stageX: number, stageY: number, layer: Layer) {
-    const stroke = strokeRef.current;
-    if (stroke === null || stroke.layerId !== layer.id) return;
-    const { x, y } = stageToImageCoords(stageX, stageY, layer);
+  function applyAt(stageX: number, stageY: number, stroke: StrokeState) {
+    const { x, y } = stageToImageCoords(stageX, stageY, {
+      x: stroke.layerX,
+      y: stroke.layerY,
+      width: stroke.layerW,
+      height: stroke.layerH,
+      rotation: stroke.layerRotation,
+      imageData: { width: stroke.imgW, height: stroke.imgH } as ImageData,
+    });
+
+    const { eraserSize } = useEditorStore.getState();
     const radiusInImage = Math.max(
       1,
-      Math.round(eraserSize * (layer.imageData.width / layer.width)),
+      Math.round(eraserSize * (stroke.imgW / stroke.layerW)),
     );
-    eraseCircle(stroke.buffer, stroke.imgW, stroke.imgH, x, y, radiusInImage);
-    updateLayerImageData(
-      layer.id,
-      new ImageData(stroke.buffer, stroke.imgW, stroke.imgH),
-    );
+
+    eraseRawBuffer(stroke.rawBuffer, stroke.imgW, stroke.imgH, x, y, radiusInImage);
+
+    stroke.previewCtx.globalCompositeOperation = "destination-out";
+    stroke.previewCtx.beginPath();
+    stroke.previewCtx.arc(x, y, radiusInImage, 0, Math.PI * 2);
+    stroke.previewCtx.fill();
+    stroke.previewCtx.globalCompositeOperation = "source-over";
+
+    previewRef.current?.image(stroke.previewCanvas);
+    previewRef.current?.getLayer()?.batchDraw();
   }
 
   function handlePointerDown(e: Konva.KonvaEventObject<MouseEvent>) {
@@ -83,28 +105,51 @@ export function useEraser() {
     if (layer === null) return;
     const pos = getPointer(e);
     if (pos === null) return;
-    _pushHistory();
-    strokeRef.current = {
+
+    useEditorStore.getState()._pushHistory();
+
+    const filtered = applyFilters(layer.imageData, layer.filters);
+    const canvas = new OffscreenCanvas(filtered.width, filtered.height);
+    const ctx = canvas.getContext("2d");
+    if (ctx === null) return;
+    ctx.putImageData(filtered, 0, 0);
+
+    const stroke: StrokeState = {
       layerId: layer.id,
-      buffer: new Uint8ClampedArray(layer.imageData.data.buffer.slice(0)) as Uint8ClampedArray<ArrayBuffer>,
       imgW: layer.imageData.width,
       imgH: layer.imageData.height,
+      layerX: layer.x,
+      layerY: layer.y,
+      layerW: layer.width,
+      layerH: layer.height,
+      layerRotation: layer.rotation,
+      layerOpacity: layer.opacity,
+      rawBuffer: new Uint8ClampedArray(layer.imageData.data.buffer.slice(0)) as Uint8ClampedArray<ArrayBuffer>,
+      previewCanvas: canvas,
+      previewCtx: ctx,
     };
-    applyAt(pos.x, pos.y, layer);
+
+    strokeRef.current = stroke;
+    setErasingLayerId(layer.id);
+    applyAt(pos.x, pos.y, stroke);
   }
 
   function handlePointerMove(e: Konva.KonvaEventObject<MouseEvent>) {
-    if (strokeRef.current === null) return;
-    const layer = getActiveLayer();
-    if (layer === null) return;
+    const stroke = strokeRef.current;
+    if (stroke === null) return;
     const pos = getPointer(e);
     if (pos === null) return;
-    applyAt(pos.x, pos.y, layer);
+    applyAt(pos.x, pos.y, stroke);
   }
 
   function handlePointerUp() {
+    const stroke = strokeRef.current;
     strokeRef.current = null;
+    setErasingLayerId(null);
+    if (stroke === null) return;
+    const finalData = new ImageData(stroke.rawBuffer, stroke.imgW, stroke.imgH);
+    useEditorStore.getState().updateLayerImageData(stroke.layerId, finalData);
   }
 
-  return { handlePointerDown, handlePointerMove, handlePointerUp };
+  return { handlePointerDown, handlePointerMove, handlePointerUp, erasingLayerId };
 }

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Circle, Layer as KonvaLayer, Rect, Stage } from "react-konva";
+import { Circle, Image as KonvaImage, Layer as KonvaLayer, Rect, Stage } from "react-konva";
 import type Konva from "konva";
 import LayerImage from "@/canvas/LayerImage";
 import SelectionRect from "@/canvas/SelectionRect";
@@ -11,18 +11,22 @@ import type { RectBounds } from "@/types";
 const STAGE_WIDTH = 900;
 const STAGE_HEIGHT = 600;
 const MIN_SELECTION = 5;
+const BLANK_CANVAS = new OffscreenCanvas(1, 1);
 
 type Point = { x: number; y: number };
 
 export default function EditorStage() {
   const stageRef = useRef<Konva.Stage>(null);
+  const eraserPreviewRef = useRef<Konva.Image>(null);
+
   const layers = useEditorStore((s) => s.layers);
   const activeLayerId = useEditorStore((s) => s.activeLayerId);
   const activeTool = useEditorStore((s) => s.activeTool);
   const eraserSize = useEditorStore((s) => s.eraserSize);
   const setSelection = useEditorStore((s) => s.setSelection);
   const setActiveLayer = useEditorStore((s) => s.setActiveLayer);
-  const eraser = useEraser();
+
+  const eraser = useEraser(eraserPreviewRef);
 
   const [drawingRect, setDrawingRect] = useState<RectBounds | null>(null);
   const [eraserPos, setEraserPos] = useState<Point | null>(null);
@@ -31,6 +35,8 @@ export default function EditorStage() {
   const visibleLayers = [...layers]
     .filter((l) => l.visible)
     .sort((a, b) => a.zIndex - b.zIndex);
+
+  const activeLayer = layers.find((l) => l.id === activeLayerId) ?? null;
 
   function getPointer(e: Konva.KonvaEventObject<MouseEvent>) {
     return e.target.getStage()?.getPointerPosition() ?? null;
@@ -105,8 +111,22 @@ export default function EditorStage() {
                 layer={layer}
                 isActive={layer.id === activeLayerId}
                 toolMode={activeTool}
+                isErasing={layer.id === eraser.erasingLayerId}
               />
             ))}
+            {eraser.erasingLayerId !== null && activeLayer !== null && (
+              <KonvaImage
+                ref={eraserPreviewRef}
+                image={BLANK_CANVAS}
+                x={activeLayer.x}
+                y={activeLayer.y}
+                width={activeLayer.width}
+                height={activeLayer.height}
+                rotation={activeLayer.rotation}
+                opacity={activeLayer.opacity}
+                listening={false}
+              />
+            )}
           </KonvaLayer>
           <KonvaLayer>
             {activeTool === "select" && (
