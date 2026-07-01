@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Layer as KonvaLayer, Rect, Stage } from "react-konva";
+import { Circle, Layer as KonvaLayer, Rect, Stage } from "react-konva";
 import type Konva from "konva";
 import LayerImage from "@/canvas/LayerImage";
 import SelectionRect from "@/canvas/SelectionRect";
@@ -12,17 +12,21 @@ const STAGE_WIDTH = 900;
 const STAGE_HEIGHT = 600;
 const MIN_SELECTION = 5;
 
+type Point = { x: number; y: number };
+
 export default function EditorStage() {
   const stageRef = useRef<Konva.Stage>(null);
   const layers = useEditorStore((s) => s.layers);
   const activeLayerId = useEditorStore((s) => s.activeLayerId);
   const activeTool = useEditorStore((s) => s.activeTool);
+  const eraserSize = useEditorStore((s) => s.eraserSize);
   const setSelection = useEditorStore((s) => s.setSelection);
   const setActiveLayer = useEditorStore((s) => s.setActiveLayer);
   const eraser = useEraser();
 
   const [drawingRect, setDrawingRect] = useState<RectBounds | null>(null);
-  const startPos = useRef<{ x: number; y: number } | null>(null);
+  const [eraserPos, setEraserPos] = useState<Point | null>(null);
+  const startPos = useRef<Point | null>(null);
 
   const visibleLayers = [...layers]
     .filter((l) => l.visible)
@@ -47,13 +51,13 @@ export default function EditorStage() {
   }
 
   function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent>) {
+    const pos = getPointer(e);
     if (activeTool === "eraser") {
+      setEraserPos(pos);
       eraser.handlePointerMove(e);
       return;
     }
-    if (startPos.current === null) return;
-    const pos = getPointer(e);
-    if (pos === null) return;
+    if (startPos.current === null || pos === null) return;
     setDrawingRect({
       x: Math.min(startPos.current.x, pos.x),
       y: Math.min(startPos.current.y, pos.y),
@@ -75,6 +79,10 @@ export default function EditorStage() {
     }
   }
 
+  function handleMouseLeave() {
+    setEraserPos(null);
+  }
+
   const cursorStyle = activeTool === "eraser" ? "none" : "default";
 
   return (
@@ -88,6 +96,7 @@ export default function EditorStage() {
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
         >
           <KonvaLayer>
             {visibleLayers.map((layer) => (
@@ -113,6 +122,17 @@ export default function EditorStage() {
                 stroke="#3b82f6"
                 strokeWidth={1.5}
                 dash={[6, 3]}
+                listening={false}
+              />
+            )}
+            {activeTool === "eraser" && eraserPos !== null && (
+              <Circle
+                x={eraserPos.x}
+                y={eraserPos.y}
+                radius={eraserSize}
+                stroke="rgba(255,255,255,0.9)"
+                strokeWidth={1.5}
+                fill="rgba(255,255,255,0.08)"
                 listening={false}
               />
             )}
