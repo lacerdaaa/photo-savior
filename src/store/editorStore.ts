@@ -5,6 +5,7 @@ import type {
   Layer,
   Selection,
 } from "@/types";
+import { captureImageData, cropImageData } from "@/utils/imageUtils";
 
 const HISTORY_LIMIT = 50;
 
@@ -41,6 +42,7 @@ type EditorState = {
   setOpacity: (id: string, opacity: number) => void;
   setFilters: (id: string, filters: FilterParams) => void;
   setSelection: (selection: Selection | null) => void;
+  cropSelection: (layerId: string) => void;
   undo: () => void;
   redo: () => void;
   resetEditor: () => void;
@@ -167,6 +169,45 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setSelection: (selection) => {
     set({ selection });
+  },
+
+  cropSelection: (layerId) => {
+    const state = get();
+    if (state.selection === null) return;
+    const layer = state.layers.find((l) => l.id === layerId);
+    if (layer === undefined) return;
+    get()._pushHistory();
+    const cropped = cropImageData(
+      layer.imageData,
+      layer.x,
+      layer.y,
+      state.selection.bounds,
+    );
+    const { x, y, w, h } = state.selection.bounds;
+    const newImg = new Image(cropped.width, cropped.height);
+    const tmpCanvas = new OffscreenCanvas(cropped.width, cropped.height);
+    const tmpCtx = tmpCanvas.getContext("2d");
+    if (tmpCtx !== null) {
+      tmpCtx.putImageData(cropped, 0, 0);
+      void tmpCanvas.convertToBlob().then((blob) => {
+        newImg.src = URL.createObjectURL(blob);
+        newImg.onload = () => {
+          URL.revokeObjectURL(newImg.src);
+          const finalData = captureImageData(newImg);
+          set((s) => ({
+            layers: updateLayer(s.layers, layerId, {
+              imageData: finalData,
+              imageElement: newImg,
+              x,
+              y,
+              width: w,
+              height: h,
+            }),
+            selection: null,
+          }));
+        };
+      });
+    }
   },
 
   undo: () => {
