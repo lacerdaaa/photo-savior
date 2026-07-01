@@ -1,7 +1,9 @@
 import {
   Crop,
   Download,
+  Eraser,
   ImagePlus,
+  MousePointer2,
   Redo2,
   Undo2,
 } from "lucide-react";
@@ -14,8 +16,10 @@ export default function Toolbar() {
   const { exportAs } = useExport();
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
-  const { undo, redo, cropSelection } = useEditorStore();
+  const { undo, redo, cropSelection, setActiveTool, setEraserSize } = useEditorStore();
   const selection = useEditorStore((s) => s.selection);
+  const activeTool = useEditorStore((s) => s.activeTool);
+  const eraserSize = useEditorStore((s) => s.eraserSize);
   const activeLayer = useActiveLayer();
 
   function handleCrop() {
@@ -24,7 +28,7 @@ export default function Toolbar() {
   }
 
   return (
-    <div className="navbar bg-base-200 border-b border-base-300 shrink-0 px-4 gap-2">
+    <div className="navbar bg-base-200 border-b border-base-300 shrink-0 px-4 gap-3">
       <div className="navbar-start gap-2">
         <input
           ref={inputRef}
@@ -37,6 +41,40 @@ export default function Toolbar() {
           <ImagePlus size={15} />
           Imagem
         </button>
+
+        <div className="join">
+          <button
+            className={`btn btn-sm join-item gap-1.5 ${activeTool === "select" ? "btn-neutral" : "btn-ghost"}`}
+            onClick={() => setActiveTool("select")}
+            title="Seleção / Mover"
+          >
+            <MousePointer2 size={15} />
+          </button>
+          <button
+            className={`btn btn-sm join-item gap-1.5 ${activeTool === "eraser" ? "btn-neutral" : "btn-ghost"}`}
+            onClick={() => setActiveTool("eraser")}
+            title="Borracha"
+          >
+            <Eraser size={15} />
+          </button>
+        </div>
+
+        {activeTool === "eraser" && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-base-content/60">Tamanho</span>
+            <input
+              type="range"
+              className="range range-xs range-primary w-24"
+              min="4"
+              max="80"
+              value={eraserSize}
+              onChange={(e) => setEraserSize(Number(e.target.value))}
+            />
+            <span className="text-xs text-base-content/50 tabular-nums w-6">
+              {eraserSize}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="navbar-center gap-2">
@@ -74,7 +112,6 @@ export default function Toolbar() {
         <button
           className="btn btn-outline btn-sm gap-1.5"
           onClick={() => void exportAs("png")}
-          title="Exportar PNG"
         >
           <Download size={15} />
           PNG
@@ -82,7 +119,6 @@ export default function Toolbar() {
         <button
           className="btn btn-outline btn-sm gap-1.5"
           onClick={() => void exportAs("jpeg")}
-          title="Exportar JPEG"
         >
           <Download size={15} />
           JPEG

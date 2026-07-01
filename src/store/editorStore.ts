@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type {
+  ActiveTool,
   FilterParams,
   HistoryEntry,
   Layer,
@@ -29,8 +30,13 @@ type EditorState = {
   selection: Selection | null;
   past: HistoryEntry[];
   future: HistoryEntry[];
+  activeTool: ActiveTool;
+  eraserSize: number;
 
   _pushHistory: () => void;
+  setActiveTool: (tool: ActiveTool) => void;
+  setEraserSize: (size: number) => void;
+  updateLayerImageData: (id: string, imageData: ImageData) => void;
   addLayer: (layer: Layer) => void;
   deleteLayer: (id: string) => void;
   duplicateLayer: (id: string) => void;
@@ -77,6 +83,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selection: null,
   past: [],
   future: [],
+  activeTool: "select",
+  eraserSize: 20,
+
+  setActiveTool: (tool) => set({ activeTool: tool }),
+
+  setEraserSize: (size) => set({ eraserSize: size }),
+
+  updateLayerImageData: (id, imageData) => {
+    set((state) => ({ layers: updateLayer(state.layers, id, { imageData }) }));
+  },
 
   _pushHistory: () => {
     const state = get();

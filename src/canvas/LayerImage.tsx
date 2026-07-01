@@ -3,14 +3,16 @@ import { Image as KonvaImage } from "react-konva";
 import type Konva from "konva";
 import { applyFilters } from "@/filters/filterPipeline";
 import { useEditorStore } from "@/store/editorStore";
+import type { ActiveTool } from "@/types";
 import type { Layer } from "@/types";
 
 type Props = {
   layer: Layer;
   isActive: boolean;
+  toolMode: ActiveTool;
 };
 
-export default function LayerImage({ layer, isActive }: Props) {
+export default function LayerImage({ layer, isActive, toolMode }: Props) {
   const imageRef = useRef<Konva.Image>(null);
   const { moveLayer, resizeLayer, _pushHistory } = useEditorStore();
   const setActiveLayer = useEditorStore((s) => s.setActiveLayer);
@@ -56,7 +58,7 @@ export default function LayerImage({ layer, isActive }: Props) {
       height={layer.height}
       rotation={layer.rotation}
       opacity={layer.opacity}
-      draggable={isActive}
+      draggable={isActive && toolMode === "select"}
       onClick={() => setActiveLayer(layer.id)}
       onTap={() => setActiveLayer(layer.id)}
       onDragEnd={handleDragEnd}

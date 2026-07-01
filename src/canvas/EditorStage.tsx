@@ -4,6 +4,7 @@ import type Konva from "konva";
 import LayerImage from "@/canvas/LayerImage";
 import SelectionRect from "@/canvas/SelectionRect";
 import TransformerBox from "@/canvas/TransformerBox";
+import { useEraser } from "@/hooks/useEraser";
 import { useEditorStore } from "@/store/editorStore";
 import type { RectBounds } from "@/types";
 
@@ -15,8 +16,10 @@ export default function EditorStage() {
   const stageRef = useRef<Konva.Stage>(null);
   const layers = useEditorStore((s) => s.layers);
   const activeLayerId = useEditorStore((s) => s.activeLayerId);
+  const activeTool = useEditorStore((s) => s.activeTool);
   const setSelection = useEditorStore((s) => s.setSelection);
   const setActiveLayer = useEditorStore((s) => s.setActiveLayer);
+  const eraser = useEraser();
 
   const [drawingRect, setDrawingRect] = useState<RectBounds | null>(null);
   const startPos = useRef<{ x: number; y: number } | null>(null);
@@ -30,6 +33,10 @@ export default function EditorStage() {
   }
 
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
+    if (activeTool === "eraser") {
+      eraser.handlePointerDown(e);
+      return;
+    }
     if (e.target !== e.target.getStage()) return;
     setActiveLayer(null);
     setSelection(null);
@@ -40,6 +47,10 @@ export default function EditorStage() {
   }
 
   function handleMouseMove(e: Konva.KonvaEventObject<MouseEvent>) {
+    if (activeTool === "eraser") {
+      eraser.handlePointerMove(e);
+      return;
+    }
     if (startPos.current === null) return;
     const pos = getPointer(e);
     if (pos === null) return;
@@ -51,7 +62,11 @@ export default function EditorStage() {
     });
   }
 
-  function handleMouseUp() {
+  function handleMouseUp(_e: Konva.KonvaEventObject<MouseEvent>) {
+    if (activeTool === "eraser") {
+      eraser.handlePointerUp();
+      return;
+    }
     const rect = drawingRect;
     setDrawingRect(null);
     startPos.current = null;
@@ -60,9 +75,11 @@ export default function EditorStage() {
     }
   }
 
+  const cursorStyle = activeTool === "eraser" ? "none" : "default";
+
   return (
     <div className="overflow-auto bg-base-300 flex items-center justify-center h-full">
-      <div className="shadow-xl">
+      <div className="shadow-xl" style={{ cursor: cursorStyle }}>
         <Stage
           ref={stageRef}
           width={STAGE_WIDTH}
@@ -78,11 +95,14 @@ export default function EditorStage() {
                 key={layer.id}
                 layer={layer}
                 isActive={layer.id === activeLayerId}
+                toolMode={activeTool}
               />
             ))}
           </KonvaLayer>
           <KonvaLayer>
-            <TransformerBox stageRef={stageRef} />
+            {activeTool === "select" && (
+              <TransformerBox stageRef={stageRef} />
+            )}
             <SelectionRect />
             {drawingRect !== null && (
               <Rect

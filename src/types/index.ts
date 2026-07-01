@@ -1,3 +1,5 @@
+export type ActiveTool = "select" | "eraser";
+
 export type FilterParams = {
   brightness: number;
   contrast: number;
