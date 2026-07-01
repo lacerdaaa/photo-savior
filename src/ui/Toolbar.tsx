@@ -20,6 +20,7 @@ export default function Toolbar() {
   const selection = useEditorStore((s) => s.selection);
   const activeTool = useEditorStore((s) => s.activeTool);
   const eraserSize = useEditorStore((s) => s.eraserSize);
+  const zoom = useEditorStore((s) => s.zoom);
   const activeLayer = useActiveLayer();
 
   function handleCrop() {
@@ -108,7 +109,10 @@ export default function Toolbar() {
         </button>
       </div>
 
-      <div className="navbar-end gap-2">
+      <div className="navbar-end gap-3">
+        <span className="text-xs text-base-content/50 tabular-nums w-12 text-right">
+          {zoom}%
+        </span>
         <button
           className="btn btn-outline btn-sm gap-1.5"
           onClick={() => void exportAs("png")}

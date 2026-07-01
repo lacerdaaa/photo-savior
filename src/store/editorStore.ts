@@ -32,10 +32,12 @@ type EditorState = {
   future: HistoryEntry[];
   activeTool: ActiveTool;
   eraserSize: number;
+  zoom: number;
 
   _pushHistory: () => void;
   setActiveTool: (tool: ActiveTool) => void;
   setEraserSize: (size: number) => void;
+  setZoom: (zoom: number) => void;
   updateLayerImageData: (id: string, imageData: ImageData) => void;
   addLayer: (layer: Layer) => void;
   deleteLayer: (id: string) => void;
@@ -85,10 +87,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   future: [],
   activeTool: "select",
   eraserSize: 20,
+  zoom: 100,
 
   setActiveTool: (tool) => set({ activeTool: tool }),
-
   setEraserSize: (size) => set({ eraserSize: size }),
+  setZoom: (zoom) => set({ zoom }),
 
   updateLayerImageData: (id, imageData) => {
     set((state) => ({ layers: updateLayer(state.layers, id, { imageData }) }));

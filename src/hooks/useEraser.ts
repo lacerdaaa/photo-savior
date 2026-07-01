@@ -69,7 +69,13 @@ export function useEraser(
   }
 
   function getPointer(e: Konva.KonvaEventObject<MouseEvent>) {
-    return e.target.getStage()?.getPointerPosition() ?? null;
+    const stage = e.target.getStage();
+    const pos = stage?.getPointerPosition();
+    if (stage === null || stage === undefined || pos === null || pos === undefined) return null;
+    return {
+      x: (pos.x - stage.x()) / stage.scaleX(),
+      y: (pos.y - stage.y()) / stage.scaleY(),
+    };
   }
 
   function applyAt(stageX: number, stageY: number, stroke: StrokeState) {
